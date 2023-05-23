@@ -1,0 +1,2 @@
+# Apple_Disease_Image_Recognition_Challenge
+2023讯飞开放平台-AI开发者大赛-苹果病害图像识别挑战赛
