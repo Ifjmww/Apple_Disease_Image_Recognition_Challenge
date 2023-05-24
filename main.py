@@ -1,113 +1,51 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import os
-from torchvision.transforms import transforms
-from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from utils.tools import choose_model
+import argparse
+from test import test
+from train import train
+from utils.tools import save_args_info
 
-torch.manual_seed(42)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def add_args():
+    parser = argparse.ArgumentParser(description="APPLE")
 
-# 数据集路径和超参数
-EXP = 'ghostnet'
-model_name = 'ghostnet'  # model_name=['resnet50','mobilenetv3_small','mobilenetv3_large','ghostnet']
-num_classes = 9
-batch_size = 16
-num_epochs = 100
-weights = torch.tensor([34.9273, 35.3809, 4.5864, 42.7905, 28.1827, 39.2932, 12.3087, 5.2968, 2.6973]).to(device)
+    parser.add_argument("--epochs", default=200, type=int, help="max number of training epochs")
+    parser.add_argument("--seed", default=42, type=int, help="torch.manual_seed")
+    parser.add_argument("--device", default='cuda:0', type=str, help="GPU id for training")
+    parser.add_argument("--mode", default='train', choices=['train', 'test'], type=str, help='network run mode')
+    parser.add_argument("--batch_size", default=16, type=int, help="number of batch size")
+    parser.add_argument("--batch_size_test", default=1, type=int, help="number of batch size when not training")
+    parser.add_argument("--train_path", default="./dataset/train/", type=str, help="dataset directory")
+    parser.add_argument("--valid_path", default="./dataset/valid/", type=str, help="dataset directory")
+    parser.add_argument("--test_path", default="./dataset/test/", type=str, help="dataset directory")
+    parser.add_argument("--num_classes", default=9, type=int, help="number of classes")
+    parser.add_argument("--model_name", default="resnet50",
+                        choices=['resnet50', 'mobilenetv3_small', 'mobilenetv3_large', 'ghostnet', 'ghost-resnet', 'ghostnetv2', 'enet-b0', 'enet-b1',
+                                 'enet-b2''enet-b3'],
+                        type=str, help="model name")
+    parser.add_argument("--save_every", default=10, type=int, help="validation frequency")
+    parser.add_argument("--lr", default=0.001, type=float, help="optimization learning rate")
 
-# 数据预处理
-data_transforms = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+    args = parser.parse_args()
 
-# 加载训练集和验证集
-train_dataset = ImageFolder("./dataset/train/", transform=data_transforms)
-val_dataset = ImageFolder("./dataset/valid/", transform=data_transforms)
+    print()
+    print(">>>============= args ====================<<<")
+    print()
+    print(args)  # print command line args
+    print()
+    print(">>>=======================================<<<")
 
-# 创建数据加载器
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    return args
 
-if not os.path.exists('./models/' + EXP + '/'):
-    os.makedirs('./models/' + EXP + '/')
 
-# 加载预训练的ResNet-50模型
-model = choose_model(model_name, num_classes)
+def main(args):
+    if args.mode == 'train':
+        train(args)
+    elif args.mode == 'test':
+        test(args)
+    else:
+        raise ValueError("Only ['train', 'test'] mode is supported.")
+    save_args_info(args)
 
-# 将模型放在GPU上（如果可用）
-model = model.to(device)
 
-# 定义损失函数和优化器
-criterion = nn.CrossEntropyLoss(weight=weights)
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# 训练和验证过程
-best_val_loss = float('inf')
-best_model_weights = model.state_dict()
-
-for epoch in range(num_epochs):
-    # 训练
-    model.train()
-    train_loss = 0.0
-    train_corrects = 0
-
-    for inputs, labels in tqdm(train_dataloader, desc="Epoch {}/{}".format(epoch + 1, num_epochs)):
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-
-        optimizer.zero_grad()
-
-        outputs = model(inputs)
-        _, preds = torch.max(outputs, 1)
-
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        train_loss += loss.item()
-        train_corrects += torch.sum(preds == labels.data)
-
-    train_loss = train_loss / len(train_dataloader)
-    train_acc = train_corrects / len(train_dataset)
-
-    # 验证
-    model.eval()
-    val_loss = 0.0
-    val_corrects = 0
-
-    with torch.no_grad():
-        for inputs, labels in val_dataloader:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-
-            loss = criterion(outputs, labels)
-
-            val_loss += loss.item()
-            val_corrects += torch.sum(preds == labels.data)
-
-    val_loss = val_loss / len(val_dataloader)
-    val_acc = val_corrects / len(val_dataset)
-
-    # 保存最优模型
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        best_model_weights = model.state_dict()
-
-    print("Epoch {}/{}: Train Loss: {:.4f}, Train Acc: {:.4f}, Val Loss: {:.4f}, Val Acc: {:.4f}"
-          .format(epoch + 1, num_epochs, train_loss, train_acc, val_loss, val_acc))
-
-# 加载最优模型权重
-model.load_state_dict(best_model_weights)
-
-# 保存模型
-torch.save(model.state_dict(), "./models/" + EXP + "/best_model.pth")
+if __name__ == "__main__":
+    args = add_args()
+    main(args)
