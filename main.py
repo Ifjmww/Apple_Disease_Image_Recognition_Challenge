@@ -19,7 +19,7 @@ def add_args():
     parser.add_argument("--num_classes", default=9, type=int, help="number of classes")
     parser.add_argument("--model_name", default="resnet50",
                         choices=['resnet50', 'mobilenetv3_small', 'mobilenetv3_large', 'ghostnet', 'ghost-resnet', 'ghostnetv2', 'enet-b0', 'enet-b1',
-                                 'enet-b2''enet-b3'],
+                                 'enet-b2', 'enet-b3'],
                         type=str, help="model name")
     parser.add_argument("--save_every", default=10, type=int, help="validation frequency")
     parser.add_argument("--lr", default=0.001, type=float, help="optimization learning rate")

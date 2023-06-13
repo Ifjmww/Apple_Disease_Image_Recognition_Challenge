@@ -7,7 +7,7 @@
 python data_preprocess.py
 ```
 
-## step 2 train (训练前需手动在代码中设置超参数，以及所要使用的模型，因为这里偷懒，没有写args参数👻)
+## step 2 train 
 ### PC
 ```
 python main.py --epochs 100 --batch_size 16 --model_name xxx 
@@ -19,5 +19,5 @@ python main.py --epochs 200 --batch_size 64 --model_name xxx
 
 ## Test (同样需要手动指定所要预测的模型)
 ```
-python test.py --model_name xxx
+python test.py --model_name xxx  --mode test
 ```
