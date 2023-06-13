@@ -1,6 +1,9 @@
 # Apple_Disease_Image_Recognition_Challenge
 2023讯飞开放平台-AI开发者大赛-苹果病害图像识别挑战赛
 
+## [比赛链接](https://challenge.xfyun.cn/topic/info?type=apple-diseases)
+## 最优模型 EfficientNet-B2  准确率 0.93892
+
 # Train
 ## step 1  dataset  preprocess (create validiation set)
 ```
